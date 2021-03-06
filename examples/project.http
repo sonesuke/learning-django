@@ -1,0 +1,6 @@
+### Add a project
+PUT http://localhost:8000/managed-history/project
+
+### Delete all projects
+DELETE http://localhost:8000/managed-history/project
+
