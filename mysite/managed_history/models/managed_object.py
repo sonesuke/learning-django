@@ -17,6 +17,9 @@ class ApplicationQuerySet(models.QuerySet):
     def managed_save(self) -> None:
         [item.managed_save() for item in self.all()]
 
+    def managed_create(self, **kwargs: Any) -> None:
+        self.create(**kwargs)
+
 
 class ApplicationQueryManager(models.Manager.from_queryset(ApplicationQuerySet)):  # type: ignore
     pass
@@ -35,7 +38,7 @@ class ManagedObject(models.Model):
         return f"{self.project}_{self.version}: {self.value}"
 
     def managed_save(self, **kwargs: Any) -> None:
-        newest_version = self.project.version()
+        newest_version = self.project.bump_version(abandoned_object=self)
         bumping = self.version != newest_version
         if bumping:
             self.pk = None
@@ -44,11 +47,8 @@ class ManagedObject(models.Model):
         super(ManagedObject, self).save(**kwargs)
 
     def managed_delete(self, **kwargs: Any) -> None:
-        newest_version = self.project.version()
-        bumping = self.version != newest_version
-        if bumping:
-            self.project.bump_version(abandoned_object=self)
-        else:
+        newest_version = self.project.bump_version(abandoned_object=self)
+        if self.version == newest_version:
             super(ManagedObject, self).delete(**kwargs)
 
 
