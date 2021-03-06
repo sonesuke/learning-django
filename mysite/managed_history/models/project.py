@@ -11,7 +11,7 @@ class Project(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self) -> str:
-        return f"Project {self.id}_{self.versions()}"
+        return f"{self.id}_{self.versions()}"
 
     def version(self) -> History:
         return History.objects.filter(project=self).last()  # type: ignore
