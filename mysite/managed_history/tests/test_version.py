@@ -13,7 +13,7 @@ class VersionTests(TestCase):
         self.assertEqual(len(project.versions()), 2)
         self.assertEqual(ManagedObject.objects.filter(project=project).count(), 2)
 
-    def test_bump_version_with_object(self):
+    def test_managed_save(self):
         Project.objects.all().delete()
         project = Project.objects.create()
         ManagedObject.objects.create(project=project, value="A")
@@ -30,7 +30,6 @@ class VersionTests(TestCase):
         ManagedObject.objects.create(project=project, value="A")
         project.bump_version()
         newest_object = ManagedObject.objects.filter_project(project=project).all()
-        newest_object.filter(value="A").managed_delete()
+        newest_object.managed_delete()
         self.assertEqual(ManagedObject.objects.filter(project=project).count(), 1)
-        newest_object = ManagedObject.objects.filter_project(project=project).all()
-        self.assertEqual(newest_object.count(), 0)
+        self.assertEqual(ManagedObject.objects.filter_project(project=project).count(), 0)
