@@ -1,6 +1,7 @@
 from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.db import transaction
 
 from .history import History
 from typing import List, Any
@@ -11,7 +12,7 @@ class Project(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self) -> str:
-        return f"{self.id}_{self.versions()}"
+        return f"{self.id}_{self.version()}"
 
     def version(self) -> History:
         return History.objects.filter(project=self).last()  # type: ignore
@@ -19,8 +20,18 @@ class Project(models.Model):
     def versions(self) -> List[History]:
         return [history for history in History.objects.filter(project=self).order_by("id")]
 
-    def bump_version(self) -> None:
-        History.objects.create(project=self)
+    def bump_version(self, abandoned_object: Any = None) -> None:
+        from .managed_object import ManagedObject
+
+        with transaction.atomic():
+            objects = ManagedObject.objects.filter_project(project=self).all()
+            history = History.objects.create(project=self)
+            for object in objects:
+                if object == abandoned_object:
+                    continue
+                object.version = history
+                object.pk = None
+                object.save(force_insert=True)
 
 
 @receiver(post_save, sender=Project)
