@@ -18,5 +18,4 @@ class ProjectService(object):
 
     @staticmethod
     def fetch() -> Project:
-        return Project.objects.last()
-
+        return Project.objects.last()  # type: ignore
