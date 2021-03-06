@@ -11,7 +11,7 @@ class ApplicationObject(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self) -> str:
-        return f"ApplicationObject {self.project}_{self.version}"
+        return f"{self.project}_{self.version}"
 
 
 @receiver(pre_save, sender=ApplicationObject)
