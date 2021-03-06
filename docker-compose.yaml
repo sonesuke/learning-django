@@ -1,0 +1,19 @@
+version: '3'
+
+services:
+  django:
+    build: ./
+    working_dir: /app/mysite
+    volumes:
+    - ./:/app
+    ports:
+    - 8000:8000
+    command: ['python', 'manage.py', 'runserver']
+
+  db:
+    image: amd64/postgres
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: example
+    ports:
+      - 5432:5432
