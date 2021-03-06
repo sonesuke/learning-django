@@ -15,3 +15,8 @@ class ProjectService(object):
     @staticmethod
     def fetch_all() -> List[Project]:
         return list(Project.objects.all())
+
+    @staticmethod
+    def fetch() -> Project:
+        return Project.objects.last()
+

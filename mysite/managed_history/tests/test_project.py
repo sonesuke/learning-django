@@ -16,3 +16,16 @@ class ProjectModelTests(TestCase):
         ProjectService.delete_all()
         ret = ProjectService.fetch_all()
         self.assertEqual(len(ret), 0)
+
+    def test_create_project_with_history(self):
+        ProjectService.delete_all()
+        ProjectService.create()
+        project = ProjectService.fetch()
+        self.assertEqual(project.version(), max(project.versions()))
+
+    def test_bump_version(self):
+        ProjectService.delete_all()
+        ProjectService.create()
+        project = ProjectService.fetch()
+        project.bump_version()
+        self.assertEqual(len(project.versions()), 2)
