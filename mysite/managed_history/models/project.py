@@ -10,11 +10,14 @@ class Project(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    def version(self) -> int:
-        return int(History.objects.filter(project=self).last().id)
+    def __str__(self) -> str:
+        return f"Project {self.id}_{self.versions()}"
 
-    def versions(self) -> List[int]:
-        return [history.id for history in History.objects.filter(project=self).order_by("id")]
+    def version(self) -> History:
+        return History.objects.filter(project=self).last()  # type: ignore
+
+    def versions(self) -> List[History]:
+        return [history for history in History.objects.filter(project=self).order_by("id")]
 
     def bump_version(self) -> None:
         History.objects.create(project=self)
