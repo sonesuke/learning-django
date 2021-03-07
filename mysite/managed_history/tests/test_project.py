@@ -12,4 +12,4 @@ class ProjectModelTests(TestCase):
     def test_create_project_with_history(self):
         Project.objects.all().delete()
         project = Project.objects.create()
-        self.assertEqual(project.version(), max(project.versions()))
+        self.assertEqual(project.version_id(), max(project.version_ids()))
