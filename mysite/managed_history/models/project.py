@@ -14,13 +14,20 @@ class Project(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self) -> str:
-        return f"{self.id}_{self.version()}"
+        return f"{self.id}_{self.version()}_{self.versions()}"
 
     def version(self) -> History:
         return History.objects.filter(project=self).last()  # type: ignore
 
     def versions(self) -> List[History]:
         return [history for history in History.objects.filter(project=self).order_by("id")]
+
+    def cleanup(self) -> None:
+        living_versions = self.versions()
+        used_versions = [a.version for a in ApplicationObject.objects.filter(project=self)]
+        for v in living_versions[:-1]:
+            if v not in used_versions:
+                v.delete()
 
     def bump_version(self, abandoned_object: Any = None, force: bool = None) -> History:
         from .managed_object import ManagedObject
