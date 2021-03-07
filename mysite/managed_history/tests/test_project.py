@@ -1,15 +1,21 @@
 # mypy: disallow_untyped_defs = False
 
 from django.test import TestCase
-from ..models import Project
+from ..models import Project, History, ManagedObject, ApplicationObject
 
 
 class ProjectModelTests(TestCase):
-    def test_create_project(self):
+    def setUp(self):
+        # Clear all objects.
         Project.objects.all().delete()
-        Project.objects.create()
+        History.objects.all().delete()
+        ApplicationObject.objects.all().delete()
+        ManagedObject.objects.all().delete()
 
-    def test_create_project_with_history(self):
-        Project.objects.all().delete()
+    def test_create_project(self):
+        # Create a project.
         project = Project.objects.create()
-        self.assertEqual(project.version_id(), max(project.version_ids()))
+
+        # First version is one, and its count is one.
+        self.assertEqual(project.version_id(), 1)
+        self.assertEqual(project.version_ids(), [1])

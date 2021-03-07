@@ -1,38 +1,69 @@
 # mypy: disallow_untyped_defs = False
 
 from django.test import TestCase
-from ..models import Project, ManagedObject, ApplicationObject
+from ..models import Project, History, ManagedObject, ApplicationObject
 
 
 class VersionTests(TestCase):
-    def test_lazy_bump_version(self):
+    def setUp(self):
+        # Clear all objects.
         Project.objects.all().delete()
+        History.objects.all().delete()
+        ApplicationObject.objects.all().delete()
+        ManagedObject.objects.all().delete()
+
+    def test_lazy_bump_version(self):
+        # Create a project with a managed object.
         project = Project.objects.create()
         ManagedObject.objects.managed_create(project=project, value="A")
+
+        # Bump version.
         project.bump_version()
+
+        # Bumping doesn't happen by no application watching this version.
+        self.assertEqual(project.version_id(), 1)
+
+        # Add application for watching.
         ApplicationObject.objects.managed_create(project=project)
-        self.assertEqual(len(project.version_ids()), 1)
+
+        # Bump version.
         project.bump_version()
-        self.assertEqual(len(project.version_ids()), 2)
+
+        # Bumping happens by an application watching this version.
+        self.assertEqual(project.version_id(), 2)
 
     def test_lazy_managed_save(self):
-        Project.objects.all().delete()
+        # Create a project with a managed object.
         project = Project.objects.create()
-        ManagedObject.objects.managed_create(project=project, value="A")
-        self.assertEqual(len(project.version_ids()), 1)
+        object = ManagedObject.objects.managed_create(project=project, value="A")
+
+        # Add application for watching.
         ApplicationObject.objects.managed_create(project=project)
+
+        # Bumping happened by managed saving of objects.
         ManagedObject.objects.filter_project(project=project).managed_save()
-        self.assertEqual(len(project.version_ids()), 2)
-        self.assertEqual(ManagedObject.objects.filter_project(project=project).count(), 1)
-        self.assertEqual(ManagedObject.objects.filter(project_id=project.project_id).count(), 2)
+
+        # The version should be bumping.
+        self.assertEqual(project.version_id(), 2)
+
+        # The object should has two versions.
+        all_versions = ManagedObject.objects.filter(project_id=project.project_id, object_id=object.object_id)
+        self.assertEqual([object.version_id for object in all_versions], [1, 2])
 
     def test_lazy_managed_delete(self):
-        Project.objects.all().delete()
+        # Create a project with a managed object.
         project = Project.objects.create()
-        ManagedObject.objects.managed_create(project=project, value="A")
-        self.assertEqual(len(project.version_ids()), 1)
+        object = ManagedObject.objects.managed_create(project=project, value="A")
+
+        # Add application for watching.
         ApplicationObject.objects.managed_create(project=project)
+
+        # Bumping happened by managed deleting of objects.
         ManagedObject.objects.filter_project(project=project).managed_delete()
-        self.assertEqual(len(project.version_ids()), 2)
-        self.assertEqual(ManagedObject.objects.filter_project(project=project).count(), 0)
-        self.assertEqual(ManagedObject.objects.filter(project_id=project.project_id).count(), 1)
+
+        # The version should be bumping.
+        self.assertEqual(project.version_id(), 2)
+
+        # The object should has one version.
+        all_versions = ManagedObject.objects.filter(project_id=project.project_id, object_id=object.object_id)
+        self.assertEqual([object.version_id for object in all_versions], [1])

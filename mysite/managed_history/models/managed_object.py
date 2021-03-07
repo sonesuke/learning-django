@@ -17,7 +17,10 @@ class ManagedObject(models.Model, ManagedObjectMixIn):
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=["object_id", "project_id", "version_id"], name="ManagedObject id unique"),
+            models.UniqueConstraint(
+                fields=["object_id", "project_id", "version_id"],
+                name="ManagedObject id unique",
+            ),
         ]
 
     def __str__(self) -> str:

@@ -1,19 +1,23 @@
 # mypy: disallow_untyped_defs = False
 
 from django.test import TestCase
-from ..models import Project, ManagedObject
+from ..models import Project, History, ManagedObject, ApplicationObject
 
 
 class ManagedObjectModelTests(TestCase):
-    def test_create_managed_object(self):
+    def setUp(self):
+        # Clear all objects.
         Project.objects.all().delete()
-        project = Project.objects.create()
-        ManagedObject.objects.managed_create(project=project, value="A")
+        History.objects.all().delete()
+        ApplicationObject.objects.all().delete()
+        ManagedObject.objects.all().delete()
 
-    def test_fetch_newest_managed_object(self):
-        Project.objects.all().delete()
+    def test_create_managed_object(self):
+        # Create a project.
         project = Project.objects.create()
+
+        # Create a managed object.
         ManagedObject.objects.managed_create(project=project, value="A")
-        objects = list(ManagedObject.objects.filter(project_id=project.project_id).all())
-        self.assertEqual(len(objects), 1)
-        self.assertEqual(objects[0].value, "A")
+        object = ManagedObject.objects.filter_project(project=project).get()
+        self.assertEqual(object.version_id, 1)
+        self.assertEqual(object.value, "A")

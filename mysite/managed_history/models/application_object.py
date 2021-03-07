@@ -17,7 +17,8 @@ class ApplicationObject(models.Model):
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=["application_id", "project_id", "version_id"], name="ApplicationObject id unique"
+                fields=["application_id", "project_id", "version_id"],
+                name="ApplicationObject id unique",
             ),
         ]
 

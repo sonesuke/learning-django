@@ -1,20 +1,25 @@
 # mypy: disallow_untyped_defs = False
 
 from django.test import TestCase
-from ..models import Project, ApplicationObject, ManagedObject
+from ..models import Project, History, ManagedObject, ApplicationObject
 
 
 class ApplicationObjectModelTests(TestCase):
-    def test_create_application_object(self):
+    def setUp(self):
+        # Clear all objects.
         Project.objects.all().delete()
-        project = Project.objects.create()
-        ApplicationObject.objects.managed_create(project=project)
+        History.objects.all().delete()
+        ApplicationObject.objects.all().delete()
+        ManagedObject.objects.all().delete()
 
-    def test_watching_managed_object(self):
-        Project.objects.all().delete()
+    def test_create_application_object(self):
+        # Create a project with a managed object.
         project = Project.objects.create()
         ManagedObject.objects.managed_create(project=project, value="A")
+
+        # Add an application.
         application = ApplicationObject.objects.managed_create(project=project)
-        objects = list(ManagedObject.objects.filter_application(application=application).all())
-        self.assertEqual(len(objects), 1)
-        self.assertEqual(objects[0].value, "A")
+
+        # Application should be able to watch the managed object.
+        objects = ManagedObject.objects.filter_application(application=application).all()
+        self.assertEqual([object.value for object in objects], ["A"])
