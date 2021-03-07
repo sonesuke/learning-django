@@ -28,7 +28,7 @@ def post_save_project_hook(sender: Any, instance: Project, created: bool, **kwar
     if created:
         History.objects.create(project_id=instance.project_id)
 
+
 @receiver(post_delete, sender=Project)
 def post_delete_project_hook(sender: Any, instance: Project, **kwargs: Any) -> None:
     History.objects.filter(project_id=instance.project_id).delete()
-

@@ -53,8 +53,9 @@ class HistorianMixIn:
 class ApplicationObjectQuerySet(models.QuerySet):
     pass
 
-class ApplicationObjectManager(models.Manager.from_queryset(ApplicationObjectQuerySet)) :  # type: ignore
-    def managed_create(self, project: Any, **kwargs: Any) -> 'ApplicationObject':
+
+class ApplicationObjectManager(models.Manager.from_queryset(ApplicationObjectQuerySet)):  # type: ignore
+    def managed_create(self, project: Any, **kwargs: Any) -> Any:
         kwargs["project_id"] = project.project_id
         if "version_id" not in kwargs:
             kwargs["version_id"] = project.version_id()
@@ -68,7 +69,7 @@ class ManagedObjectMixIn:
         return Project.objects.filter(project_id=project_id).get()  # type: ignore
 
     def managed_save(self, **kwargs: Any) -> None:
-        project_id = kwargs["project_id"] if "project_id" in kwargs else self.project_id #type ignore
+        project_id = kwargs["project_id"] if "project_id" in kwargs else self.project_id  # type: ignore
         newest_version_id = self._project(project_id).bump_version(abandoned_object=self)
         bumping = self.version_id != newest_version_id  # type: ignore
         if bumping:
@@ -78,7 +79,7 @@ class ManagedObjectMixIn:
         self.save(**kwargs)  # type: ignore
 
     def managed_delete(self, **kwargs: Any) -> None:
-        newest_version_id = self._project(self.project_id).bump_version(abandoned_object=self) # type: ignore
+        newest_version_id = self._project(self.project_id).bump_version(abandoned_object=self)  # type: ignore
         if self.version_id == newest_version_id:
             self.delete(**kwargs)  # type: ignore
 
@@ -98,9 +99,8 @@ class ManagedObjectQuerySet(models.QuerySet):
 
 
 class ManagedObjectQueryManager(models.Manager.from_queryset(ManagedObjectQuerySet)):  # type: ignore
-
-    def managed_create(self, project: Any, **kwargs: Any) -> 'ManagedObject':
+    def managed_create(self, project: Any, **kwargs: Any) -> Any:
         kwargs["project_id"] = project.project_id
-        if  "version_id" not in kwargs:
+        if "version_id" not in kwargs:
             kwargs["version_id"] = project.version_id()
         return self.create(**kwargs)  # type: ignore
