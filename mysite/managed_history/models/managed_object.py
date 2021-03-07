@@ -2,57 +2,32 @@ from django.db import models
 from django.db.models.signals import pre_save
 from django.dispatch import receiver
 from typing import Any
+from .historian import ManagedObjectMixIn, ManagedObjectQueryManager
 
 
-class ApplicationQuerySet(models.QuerySet):
-    def filter_application(self, application: Any) -> models.QuerySet:
-        return self.filter(version=application.version)
+class ManagedObject(models.Model, ManagedObjectMixIn):
+    objects = ManagedObjectQueryManager()
 
-    def filter_project(self, project: Any) -> models.QuerySet:
-        return self.filter(project=project, version=project.version())
-
-    def managed_delete(self) -> None:
-        [item.managed_delete() for item in self.all()]
-
-    def managed_save(self) -> None:
-        [item.managed_save() for item in self.all()]
-
-    def managed_create(self, **kwargs: Any) -> None:
-        self.create(**kwargs)
-
-
-class ApplicationQueryManager(models.Manager.from_queryset(ApplicationQuerySet)):  # type: ignore
-    pass
-
-
-class ManagedObject(models.Model):
-    objects = ApplicationQueryManager()
-
-    project = models.ForeignKey("Project", on_delete=models.CASCADE, null=False)
-    version = models.ForeignKey("History", on_delete=models.CASCADE, null=True)
+    object_id = models.IntegerField(default=0)
+    project_id = models.IntegerField(default=0)
+    version_id = models.IntegerField(default=0)
     value = models.CharField(max_length=24)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["object_id", "project_id", "version_id"], name="ManagedObject id unique"),
+        ]
+
     def __str__(self) -> str:
-        return f"{self.project}_{self.version}: {self.value}"
-
-    def managed_save(self, **kwargs: Any) -> None:
-        newest_version = self.project.bump_version(abandoned_object=self)
-        bumping = self.version != newest_version
-        if bumping:
-            self.pk = None
-            self.version = newest_version
-        kwargs["force_insert"] = bumping
-        super(ManagedObject, self).save(**kwargs)
-
-    def managed_delete(self, **kwargs: Any) -> None:
-        newest_version = self.project.bump_version(abandoned_object=self)
-        if self.version == newest_version:
-            super(ManagedObject, self).delete(**kwargs)
+        return f"{self.project_id}_{self.version_id}_{self.object_id}: {self.value}"
 
 
 @receiver(pre_save, sender=ManagedObject)
-def create_history(sender: Any, instance: ManagedObject, **kwargs: Any) -> None:
-    if instance.version is None:
-        instance.version = instance.project.version()
+def pre_save_management_object_hook(sender: Any, instance: ManagedObject, **kwargs: Any) -> None:
+    if instance.object_id == 0:
+        id_max = ManagedObject.objects.filter(project_id=instance.project_id).aggregate(models.Max("object_id"))[
+            "object_id__max"
+        ]
+        instance.object_id = 1 if id_max is None else id_max + 1
